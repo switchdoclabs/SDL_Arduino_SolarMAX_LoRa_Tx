@@ -6,6 +6,8 @@ July 22, 2019
 
 SOFTWAREVERSION 001 
 
+This uses Protocol_ID of 8 (versus 3 for WXLink Weather Sensor Data)
+
 This software requires you to install RH_RF95 as an Arduino Library.  You can download it here:
 
 http://www.airspayce.com/mikem/arduino/RadioHead/index.html
