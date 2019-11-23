@@ -10,9 +10,9 @@
 /*! 
     Initial code from INA219 code (Basically just a core structure left)
     @author   K. Townsend (Adafruit Industries)
-	@license  BSD (see BSDlicense.txt)
-	
-	*/
+  @license  BSD (see BSDlicense.txt)
+  
+  */
 /**************************************************************************/
 
 #if ARDUINO >= 100
@@ -36,11 +36,11 @@
     #define INA3221_REG_CONFIG                      (0x00)
     /*---------------------------------------------------------------------*/
     #define INA3221_CONFIG_RESET                    (0x8000)  // Reset Bit
-	
+  
     #define INA3221_CONFIG_ENABLE_CHAN1             (0x4000)  // Enable Channel 1
     #define INA3221_CONFIG_ENABLE_CHAN2             (0x2000)  // Enable Channel 2
     #define INA3221_CONFIG_ENABLE_CHAN3             (0x1000)  // Enable Channel 3
-	
+  
     #define INA3221_CONFIG_AVG2                     (0x0800)  // AVG Samples Bit 2 - See table 3 spec
     #define INA3221_CONFIG_AVG1                     (0x0400)  // AVG Samples Bit 1 - See table 3 spec
     #define INA3221_CONFIG_AVG0                     (0x0200)  // AVG Samples Bit 0 - See table 3 spec
@@ -71,7 +71,7 @@
     #define INA3221_REG_BUSVOLTAGE_1                  (0x02)
 /*=========================================================================*/
 
-#define SHUNT_RESISTOR_VALUE  (0.1)   // default shunt resistor value of 0.1 Ohm
+#define SHUNT_RESISTOR_VALUE  (0.02)   // default shunt resistor value of 0.1 Ohm / 0.02 ohm for high current
 
 class SDL_Arduino_INA3221{
  public:

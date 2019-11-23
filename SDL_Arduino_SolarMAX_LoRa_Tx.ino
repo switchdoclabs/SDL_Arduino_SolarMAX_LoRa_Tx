@@ -1,5 +1,5 @@
 // SDL_Arduino_SolarMAX_LoRa_Tx
-// SwitchDoc Labs July 2019
+// SwitchDoc Labs November 2019
 //
 #define TXDEBUG
 //#undef TXDEBUG
@@ -9,18 +9,21 @@
 
 #define LED 13
 
-#define SOFTWAREVERSION 1
+#define SOFTWAREVERSION 3
 
 // WIRELESSID is changed if you have more than one unit reporting in the same area.  It is coded in protocol as WIRELESSID*10+SOFTWAREVERSION
-// WIRELESSID of 8 is SolarMAX
-#define WIRELESSID 8
+// WIRELESSID of 8 is SolarMAX LiPo   BatV < 8V
+// WIRELESSID of 10 is SolarMAX LeadAcid   BatV > 8V
+// #define WIRELESSID 8
+int WirelessID = 8;
+
 // Number of milliseconds between data out - set 1000 or or 30000 or 60000 if you are using DS3231
 //#define SLEEPCYCLE 30000
 
 // WIRELESSID is changed if you have more than one unit reporting in the same area.  It is coded in protocol as WIRELESSID*10+SOFTWAREVERSION
 //#define WIRELESSID 2
 // Number of milliseconds between data out - set 1000 or or 30000 or 60000 if you are using DS3231
-#define SLEEPCYCLE 29000
+#define SLEEPCYCLE 14500
 //#define SLEEPCYCLE 14000
 
 #include "Crc16.h"
@@ -84,11 +87,16 @@ XClosedCube_HDC1080 hdc1080;
   ALM2_MATCH_DAY -- causes an alarm when the day of the week and hours and minutes match.
 
 */
+#include <SoftwareSerial.h>
+
+SoftwareSerial SSerial(6, 7); // TX, RX
 
 
-SoftwareSerial SoftSerial(6, 7); // TX, RX
 
-RH_RF95 rf95(SoftSerial);
+#define COMSerial SSerial
+#define ShowSerial Serial
+
+RH_RF95<SoftwareSerial> rf95(COMSerial);
 
 unsigned long MessageCount = 0;
 
@@ -367,54 +375,20 @@ void return2Digits(char returnString[], char *buffer2, int digits)
 
 }
 
-void set32KHz(bool setValue)
-{
-
-  uint8_t s = RTC.readRTC(RTC_STATUS);
-
-  if (setValue == true)
-  {
-    s = s | (1 << EN32KHZ);
-    RTC.writeRTC(RTC_STATUS, s);
-
-  }
-  else
-  {
-    uint8_t flag;
-    flag =  ~(1 << EN32KHZ);
-    s = s & flag;
-    RTC.writeRTC(RTC_STATUS, s);
-
-  }
-
-
-
-}
-
-// AT24C32 EEPROM
-
-#include "AT24C32.h"
 
 
 void ResetWatchdog()
 {
 
-  if (badAM2315Reads < 5)
-  {
-    digitalWrite(WATCHDOG_1, LOW);
-    delay(200);
-    digitalWrite(WATCHDOG_1, HIGH);
+
+  digitalWrite(WATCHDOG_1, LOW);
+  delay(200);
+  digitalWrite(WATCHDOG_1, HIGH);
 
 #if defined(TXDEBUG)
-    Serial.println(F("Watchdog1 Reset - Patted the Dog"));
+  Serial.println(F("Watchdog1 Reset - Patted the Dog"));
 #endif
-  }
-  else
-  {
-#if defined(TXDEBUG)
-    Serial.println(F("AM2315 bad read > 5, stop patting dog"));
-#endif
-  }
+
 }
 
 
@@ -440,8 +414,10 @@ void setup()
 
   rf95.setFrequency(434.0);
   rf95.setTxPower(13);
+  int Bw31_25Cr48Sf512 = 2;
 
-  rf95.setModemConfig(RH_RF95::Bw31_25Cr48Sf512);
+  rf95.setModemConfig(RH_RF95<SoftwareSerial>::ModemConfigChoice(Bw31_25Cr48Sf512));
+  //rf95.setModemConfig(RH_RF95::Bw31_25Cr48Sf512);
   //rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
 
 
@@ -450,8 +426,6 @@ void setup()
 
   //SoftSerial.begin(9600);
 
-  Serial.print(F("Wireless ID:"));
-  Serial.println(WIRELESSID);
 
   Serial.print(F("Software Version:"));
   Serial.println(SOFTWAREVERSION);
@@ -477,7 +451,7 @@ void setup()
   nextSleepLength = SLEEPCYCLE;
 
 
-  Protocol = WIRELESSID * 10 + SOFTWAREVERSION;
+
   TimeStamp = 0;
 
   InsideTemperature = 0.0;
@@ -523,51 +497,7 @@ void setup()
     Serial.println(F("DS3231 Present"));
     digitalClockDisplay();
     DS3231_Present = true;
-    //   Disable SQW
 
-    RTC.squareWave(SQWAVE_NONE);
-    set32KHz(false);
-
-    // Now set up the alarm time
-    // we only have a few  choices. for repeatable alarms (once per second, once per minute, once per hour, once per day, once per date and once per day of the week).
-    // we are just choosing 1 per second or once per minute), you can get clever and use both alarms to do 30 seconds, 30 minutes, etc.
-    if (SLEEPCYCLE < 1001)
-    {
-
-
-      // hits every second
-      // set the alarm to go off.
-
-      RTC.setAlarm(ALM1_EVERY_SECOND, 0, 0, 0, 0);
-      RTC.alarm(ALARM_1);
-      RTC.alarm(ALARM_2);
-      RTC.alarmInterrupt(ALARM_1, true);
-
-
-    }
-    else if (SLEEPCYCLE < 30001)
-    {
-      // choose once per 30 seconds
-
-      RTC.setAlarm(ALM1_MATCH_SECONDS, 30, 0, 0, 0);
-      RTC.alarm(ALARM_1);
-      RTC.setAlarm(ALM2_EVERY_MINUTE , 0, 0, 0, 0);
-      RTC.alarm(ALARM_2);
-      RTC.alarmInterrupt(ALARM_1, true);
-      RTC.alarmInterrupt(ALARM_2, true);
-
-    }
-    else // if (SLEEPCYCLE < 60001)
-    {
-      // choose once per minute
-
-      RTC.setAlarm(ALM1_MATCH_SECONDS, 0, 0, 0, 0);
-      RTC.alarm(ALARM_1);
-      RTC.alarm(ALARM_2);
-      RTC.alarmInterrupt(ALARM_1, true);
-
-
-    }
 
     uint8_t readValue;
 
@@ -601,10 +531,10 @@ void setup()
     INA3221_Present = true;
 
     BatteryVoltage = INA3221.getBusVoltage_V(LIPO_BATTERY_CHANNEL);
-    BatteryCurrent = INA3221.getCurrent_mA(LIPO_BATTERY_CHANNEL);
+    BatteryCurrent = -INA3221.getCurrent_mA(LIPO_BATTERY_CHANNEL);
 
     SolarPanelVoltage = INA3221.getBusVoltage_V(SOLAR_CELL_CHANNEL);
-    SolarPanelCurrent = INA3221.getCurrent_mA(SOLAR_CELL_CHANNEL);
+    SolarPanelCurrent = -INA3221.getCurrent_mA(SOLAR_CELL_CHANNEL);
 
     Serial.println("");
     Serial.print(F("LIPO_Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
@@ -615,6 +545,22 @@ void setup()
     Serial.print(F("Solar Panel Current:   ")); Serial.print(SolarPanelCurrent); Serial.println(F(" mA"));
     Serial.println("");
 
+    // Now Set Wireless ID
+
+    if (BatteryVoltage < 8.0)
+    {
+      WirelessID = 8;   // SolarMAX LiPo
+    }
+    else
+    {
+      WirelessID = 10;   // SolarMAX Lead Acid (12V Battery)
+    }
+    
+    Protocol = WirelessID * 10 + SOFTWAREVERSION;
+
+    
+  Serial.print(F("Wireless ID:"));
+  Serial.println(WirelessID);
 
     Serial.println("");
   }
@@ -746,10 +692,10 @@ void loop()
 
 
       BatteryVoltage = INA3221.getBusVoltage_V(LIPO_BATTERY_CHANNEL);
-      BatteryCurrent = INA3221.getCurrent_mA(LIPO_BATTERY_CHANNEL);
+      BatteryCurrent = -INA3221.getCurrent_mA(LIPO_BATTERY_CHANNEL);
 
       SolarPanelVoltage = INA3221.getBusVoltage_V(SOLAR_CELL_CHANNEL);
-      SolarPanelCurrent = INA3221.getCurrent_mA(SOLAR_CELL_CHANNEL);
+      SolarPanelCurrent = -INA3221.getCurrent_mA(SOLAR_CELL_CHANNEL);
 
       Serial.println("");
       Serial.print(F("LIPO_Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
@@ -823,8 +769,9 @@ void loop()
       //rf95.setTxPower(13, false);
 
       rf95.setFrequency(434.0);
+      int Bw31_25Cr48Sf512 = 2;
 
-      rf95.setModemConfig(RH_RF95::Bw31_25Cr48Sf512);
+      rf95.setModemConfig(RH_RF95<SoftwareSerial>::ModemConfigChoice(Bw31_25Cr48Sf512));
       // rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
 
       rf95.setTxPower(13);
