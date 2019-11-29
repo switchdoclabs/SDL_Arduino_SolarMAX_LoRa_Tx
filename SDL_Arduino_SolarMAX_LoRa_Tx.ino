@@ -1,15 +1,15 @@
 // SDL_Arduino_SolarMAX_LoRa_Tx
 // SwitchDoc Labs November 2019
 //
-#define TXDEBUG
-//#undef TXDEBUG
+//#define TXDEBUG
+#undef TXDEBUG
 #include <JeeLib.h>
 
 #include "MemoryFree.h"
 
 #define LED 13
 
-#define SOFTWAREVERSION 3
+#define SOFTWAREVERSION 4
 
 // WIRELESSID is changed if you have more than one unit reporting in the same area.  It is coded in protocol as WIRELESSID*10+SOFTWAREVERSION
 // WIRELESSID of 8 is SolarMAX LiPo   BatV < 8V
@@ -392,12 +392,55 @@ void ResetWatchdog()
 }
 
 
+#define ENABLE 4
+#define CONTROL 3
+
+bool statusUSBPowerCentral = false;
+
+void setupUSBPowerCentral()
+{
+  digitalWrite(CONTROL, LOW);
+  digitalWrite(ENABLE, HIGH);
+  pinMode(CONTROL, OUTPUT);
+  pinMode(ENABLE, OUTPUT);
+
+}
+
+//USB PowerCentral turn on and off
+
+void USBPowerCentralOff()
+{
+  digitalWrite(CONTROL, LOW);
+  digitalWrite(ENABLE, HIGH);
+  statusUSBPowerCentral = false;
+#if defined(TXDEBUG)
+  Serial.println(F("USB PowerCentral OFF"));
+#endif
+
+}
+
+void USBPowerCentralOn()
+{
+
+  digitalWrite(CONTROL, HIGH);
+  digitalWrite(ENABLE, HIGH);
+  statusUSBPowerCentral = true;
+#if defined(TXDEBUG)
+  Serial.println(F("USB PowerCentral ON"));
+#endif
+}
+
 
 void setup()
 {
   Serial.begin(115200);    // TXDEBUGging only
 
-  Serial.println(F("WXLink Tx Present"));
+
+  // shut off USB PowerCentral for power check.
+  setupUSBPowerCentral();
+  USBPowerCentralOff();
+
+  Serial.println(F("SolarMAX WXLink Tx"));
 
   if (!rf95.init())
   {
@@ -537,8 +580,8 @@ void setup()
     SolarPanelCurrent = -INA3221.getCurrent_mA(SOLAR_CELL_CHANNEL);
 
     Serial.println("");
-    Serial.print(F("LIPO_Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
-    Serial.print(F("LIPO_Battery Current:       ")); Serial.print(BatteryCurrent); Serial.println(F(" mA"));
+    Serial.print(F("Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
+    Serial.print(F("Battery Current:       ")); Serial.print(BatteryCurrent); Serial.println(F(" mA"));
     Serial.println("");
 
     Serial.print(F("Solar Panel Voltage:   ")); Serial.print(SolarPanelVoltage); Serial.println(F(" V"));
@@ -555,15 +598,64 @@ void setup()
     {
       WirelessID = 10;   // SolarMAX Lead Acid (12V Battery)
     }
-    
+
     Protocol = WirelessID * 10 + SOFTWAREVERSION;
 
-    
-  Serial.print(F("Wireless ID:"));
-  Serial.println(WirelessID);
+
+
+
+    Serial.print(F("Wireless ID:"));
+    Serial.println(WirelessID);
 
     Serial.println("");
   }
+
+
+  // Now do the power up USB PowerCentral board check
+
+
+  // now do the power up check on start.
+  //
+  //  if BV > 12V then turn on
+  //
+  //
+#if defined(TXDEBUG)
+  Serial.print(F("Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
+#endif
+  if (WirelessID == 10)
+  {
+    if (BatteryVoltage > 12.0)
+    {
+      Serial.print(F("Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
+      USBPowerCentralOn();
+    }
+    else
+    {
+#if defined(TXDEBUG)
+      Serial.println(F("USB PowerCentral NOT turned on"));
+#endif
+    }
+  }
+
+
+  if (WirelessID == 8)
+  {
+    if (BatteryVoltage > 3.0)
+    {
+      USBPowerCentralOn();
+    }
+    else
+    {
+#if defined(TXDEBUG)
+      Serial.println(F("USB PowerCentral NOT turned on"));
+#endif
+    }
+  }
+
+#if defined(TXDEBUG)
+  Serial.print(F("USBPowerCentral Status:"));
+  Serial.println(statusUSBPowerCentral);
+#endif
 
   // Look for INA219 on Power Central
 
@@ -807,11 +899,55 @@ void loop()
     }
     Serial.println();
 
-    /*
-      delay(100);
-      digitalWrite(ENABLE_RADIO, HIGH);
-      // turn radio off
-    */
+    // Now do the power up USB PowerCentral board check
+
+
+    // now do the power up check.
+    //
+    // Do not power up computer until:
+    //  Battery Voltage > 13V OR Solar Current > 100mA
+
+
+#if defined(TXDEBUG)
+    Serial.print(F("USB PowerUp Check - Wireless ID:"));
+    Serial.println(WirelessID);
+    Serial.print(F("Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
+    Serial.print(F("Solar Current:  ")); Serial.print(SolarPanelCurrent); Serial.println(F(" mA"));
+#endif
+    if (WirelessID == 10)
+    {
+      if ((BatteryVoltage > 13.0) || (SolarPanelCurrent > 100.0))
+      {
+        Serial.print(F("Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
+        USBPowerCentralOn();
+      }
+      else
+      {
+#if defined(TXDEBUG)
+        Serial.println(F("USB PowerCentral NOT turned on"));
+#endif
+      }
+    }
+
+    if (WirelessID == 8)
+    {
+      if ((BatteryVoltage > 3.0) && (SolarPanelCurrent > 100.0))
+      {
+        USBPowerCentralOn();
+      }
+      else
+      {
+#if defined(TXDEBUG)
+        Serial.println(F("USB PowerCentral NOT turned on"));
+#endif
+      }
+    }
+    #if defined(TXDEBUG)
+  Serial.print(F("USBPowerCentral Status:"));
+  Serial.println(statusUSBPowerCentral);
+#endif
+
+
 
     MessageCount++;
 

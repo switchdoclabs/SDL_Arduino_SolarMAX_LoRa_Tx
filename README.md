@@ -3,9 +3,11 @@ SwitchDoc Labs LoRa SolarMAX Source code for the Transmitter (Tx) in SolarMAX
 Designed for the Mini Pro LP Arduino Board from SwitchDoc Labs<BR>
 (select Mini Pro 16MHz/5V in Arduino IDE)
 
-November 22, 2019
+November 29, 2019
 
-SOFTWAREVERSION 003 
+SOFTWAREVERSION 004 
+
+004 - puts hysterisis in using the USB PowerCentral control to avoid multiple up/downs and low battery conditions.   Connect D3/D4 Mini Pro LP Grove Connector  to USB PowerCentral Enable/Control Grove Connector
 
 This uses Protocol_ID of 8 and 10 (versus 3 for WXLink Weather Sensor Data)
 
