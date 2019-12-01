@@ -1,15 +1,15 @@
 // SDL_Arduino_SolarMAX_LoRa_Tx
 // SwitchDoc Labs November 2019
 //
-//#define TXDEBUG
-#undef TXDEBUG
+#define TXDEBUG
+//#undef TXDEBUG
 #include <JeeLib.h>
 
 #include "MemoryFree.h"
 
 #define LED 13
 
-#define SOFTWAREVERSION 4
+#define SOFTWAREVERSION 5
 
 // WIRELESSID is changed if you have more than one unit reporting in the same area.  It is coded in protocol as WIRELESSID*10+SOFTWAREVERSION
 // WIRELESSID of 8 is SolarMAX LiPo   BatV < 8V
@@ -916,7 +916,7 @@ void loop()
 #endif
     if (WirelessID == 10)
     {
-      if ((BatteryVoltage > 13.0) || (SolarPanelCurrent > 100.0))
+      if ((BatteryVoltage > 12.8) || (SolarPanelCurrent > 100.0))
       {
         Serial.print(F("Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
         USBPowerCentralOn();
@@ -931,7 +931,7 @@ void loop()
 
     if (WirelessID == 8)
     {
-      if ((BatteryVoltage > 3.0) && (SolarPanelCurrent > 100.0))
+      if ((BatteryVoltage > 3.0) && (SolarPanelCurrent > 100.0))  
       {
         USBPowerCentralOn();
       }
