@@ -9,7 +9,7 @@
 
 #define LED 13
 
-#define SOFTWAREVERSION 5
+#define SOFTWAREVERSION 6
 
 // WIRELESSID is changed if you have more than one unit reporting in the same area.  It is coded in protocol as WIRELESSID*10+SOFTWAREVERSION
 // WIRELESSID of 8 is SolarMAX LiPo   BatV < 8V
@@ -916,7 +916,7 @@ void loop()
 #endif
     if (WirelessID == 10)
     {
-      if ((BatteryVoltage > 12.8) || (SolarPanelCurrent > 100.0))
+      if ((BatteryVoltage > 12.8) || (SolarPanelCurrent < -100.0))
       {
         Serial.print(F("Battery Load Voltage:  ")); Serial.print(BatteryVoltage); Serial.println(F(" V"));
         USBPowerCentralOn();
@@ -931,7 +931,7 @@ void loop()
 
     if (WirelessID == 8)
     {
-      if ((BatteryVoltage > 3.0) && (SolarPanelCurrent > 100.0))  
+      if ((BatteryVoltage > 3.0) && (SolarPanelCurrent < -100.0))  
       {
         USBPowerCentralOn();
       }
