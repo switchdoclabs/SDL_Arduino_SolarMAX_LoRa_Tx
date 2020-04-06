@@ -15,9 +15,9 @@ Selects Protocol 8 if device has LiPo battery (SolarMAX LiPo)<BR>
 Selects Protocol 10 if device has Lead Acid battery (SolarMAX Lead Acid)
 
 
-This software requires you to install RH_RF95 as an Arduino Library.  You can download it here:
+This software requires you to install RH_RF95 as an Arduino Library.  You can download it here.  Install it the Arduino IDE Library
 
-http://www.airspayce.com/mikem/arduino/RadioHead/index.html
+https://github.com/Seeed-Studio/Grove_LoRa_433MHz_and_915MHz_RF/archive/master.zip
 
 Copy these libraries into the Arduino IDE Library:
 
